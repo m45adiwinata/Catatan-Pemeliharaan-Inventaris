@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<!--
+Template Name: Hoppler
+Author: <a href="http://www.os-templates.com/">OS Templates</a>
+Author URI: http://www.os-templates.com/
+Licence: Free to use under our free template licence terms
+Licence URI: http://www.os-templates.com/template-terms
+-->
+<html lang="">
+<!-- To declare your language - read more here: https://www.w3.org/International/questions/qa-html-language-declarations -->
+<head>
+<title>Data Inventaris Pegawai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="../layout/styles/layout.css" rel="stylesheet" type="text/css" media="all">
+<script src="https://www.gstatic.com/firebasejs/5.5.3/firebase.js"></script>
+<script src="../layout/scripts/firebase.js"></script>
+
+<script>
+  var database = firebase.database();
+  firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+          var userId = user.uid;
+          database.ref('users/' + userId).once('value').then(function(snapshot) {
+            var username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
+            document.getElementById("nick").innerHTML = username;
+          });
+      } else {
+          //alert("ga masook");
+          // No user is signed in.
+      }
+  });
+  function logout() {
+      firebase.auth().signOut().then(function() {
+          // Sign-out successful.
+          sessionStorage.clear();
+          window.location = "../index.html";
+      }).catch(function(error) {
+          // An error happened.
+          alert("error" + error);
+      });
+  }
+  database.ref('motor').once('value', (snap) => {
+    var data = [];
+    snap.forEach((child) => {
+      data.push({
+        noPol: child.key
+      });
+    });
+    //alert(data[0].noPol);
+    for (let i = 0; i < data.length; i++) {
+      noPol = data[i].noPol;
+      document.getElementById("noPol").innerHTML += 
+        "<option value='"+noPol+"'>"+noPol+"</option>";
+    }
+  });
+  
+  function resetInput() {
+    var tbl = document.getElementById("tblData");
+    var pagu = document.getElementById("jmlPagu");
+    tbl.innerHTML = "";
+  }
+
+  var dataset = [];
+  function setNoPol() {
+    var noPol = document.getElementById("noPol");
+    var tahun = document.getElementById("tahun");
+    database.ref(noPol.value).once("value", (snap) => {
+      dataset.push(snap.val());
+    })
+    resetInput();
+    tahun.innerHTML = '<option value="" selected disabled hidden>Tahun</option>';
+    database.ref("motor").child(noPol.value+"/pengeluaran").once("value", (snap) => {
+      snap.forEach((child) => {
+        tahun.innerHTML += '<option value="'+child.key+'">'+child.key+'</option>';
+      })
+    })
+    document.getElementById("search").value = noPol.value;
+    genereatePagu(noPol);
+    generateMerk(noPol);
+  }
+
+  function setYear() {
+    var noPol = document.getElementById("noPol");
+    var tahun = document.getElementById("tahun");
+    var bulan = document.getElementById("bulan");
+    resetInput();
+    bulan.innerHTML = '<option value="" selected disabled hidden>Bulan</option>';
+    database.ref("motor").child(noPol.value+"/pengeluaran/"+tahun.value).once("value", (snap) => {
+      snap.forEach((child) => {
+        bulan.innerHTML += '<option value="'+child.key+'">'+child.key+'</option>';
+      })
+    })
+  }
+
+  function setMonth() {
+    var noPol = document.getElementById("noPol");
+    var tahun = document.getElementById("tahun");
+    var bulan = document.getElementById("bulan");
+    resetInput();
+    generateDataTable(noPol, tahun, bulan);
+  }
+
+  function genereatePagu(noPol) {
+    var pagu = document.getElementById("jmlPagu");
+    database.ref("motor/"+noPol.value).child("pagu/value").on("value", (snap) => {
+      pagu.innerHTML = "Pagu : Rp " + snap.val() + " -";
+    });
+  }
+
+  function generateMerk(noPol) {
+    var merk = document.getElementById("merk");
+    database.ref("motor/"+noPol.value).child("merk").on("value", (snap) => {
+      merk.innerHTML = "Merk : " + snap.val().value;
+    });
+  }
+
+  function generateDataTable(noPol, tahun, bulan) {
+    var tbl = document.getElementById("tblData"); 
+    database.ref("motor/"+noPol.value).child("pengeluaran/"+tahun.value+"/"+bulan.value).on("value", (snap) => {
+      if (snap.val() == null) {
+        tbl.innerHTML = "belum ada pengeluaran tercatat.";
+      } else {
+        tbl.innerHTML = '<tr>'
+        +'<th>Tanggal</th>'
+        +'<th>Uraian</th>'
+        +'<th>Satuan</th>'
+        +'<th>Volume</th>'
+        +'<th>Total</th>'
+        +'<th colspan="2">Pilihan</th>'
+      +'</tr>';
+        snap.forEach((child) => {
+          tbl.innerHTML += '<tr>'
+            +'<td>'+child.val().tanggal+'</td>'
+            +'<td>'+child.val().uraian+'</td>'
+            +'<td>'+child.val().satuan+'</td>'
+            +'<td>'+child.val().volume+'</td>'
+            +'<td>'+child.val().biaya+'</td>'
+            +'<td><button type="button" class="btn" onclick="update(\''+child.key+'\')">ubah</button></td>'
+            +'<td><button type="button" class="btn" onclick="del(\''+child.key+'\')">hapus</button></td>'
+            +'</tr>';
+        })
+      }
+    })
+  }
+
+  function update(key) {
+    //alert(key);
+    // Get the modal
+    var modal = document.getElementById('myModal');
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal     
+    modal.style.display = "block";
+
+    // When the user clicks on <span> (x), close the modal
+     var xspan = document.getElementById("close");
+
+    xspan.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    var noPol = document.getElementById("noPol");
+    var tahun = document.getElementById("tahun");
+    var month = document.getElementById("bulan");
+    document.getElementById("nomorPolisi").value = noPol.value;
+    database.ref("motor/"+noPol.value).child("pagu").on("value", (snap) => {
+      document.getElementById("Pagu").value = Number(snap.val().value);
+    })
+    database.ref("motor/"+noPol.value+"/pengeluaran/"+tahun.value+"/"+month.value).child(key).on("value", (snap) => {
+      document.getElementById("uraian").value = snap.val().uraian;
+      document.getElementById("volume").value = snap.val().volume;
+      document.getElementById("satuan").value = snap.val().satuan;
+      document.getElementById("biaya_1").value = snap.val().biaya;
+    })
+    var oldTotal = Number(document.getElementById("biaya_1").value);
+    var oldUraian = document.getElementById("uraian").value;
+    var satuan = document.getElementById("satuan");
+    var volume = document.getElementById("volume");
+    satuan.onchange = function() {
+      document.getElementById("biaya_1").value = volume.value * satuan.value;
+    }
+    volume.onchange = function() {
+      document.getElementById("biaya_1").value = volume.value * satuan.value;
+    }
+
+    document.getElementById("submitBtn").onclick = function() {
+      var modal = document.getElementById('myModal');
+      var newPagu = Number(document.getElementById("Pagu").value);
+      var newTotal = Number(document.getElementById("biaya_1").value);
+      var newUraian = document.getElementById("uraian").value;
+      let sisa = 0;
+      if (oldTotal != newTotal) {
+        sisa = Math.abs(oldTotal - newTotal);
+        if (oldTotal > newTotal) {
+          newPagu += sisa;
+        } else {
+          newPagu -= sisa;
+        }
+        database.ref("motor/"+noPol.value).child("pagu").update({value:newPagu});
+      }
+      database.ref("motor/"+noPol.value+"/pengeluaran/"+tahun.value+"/"+month.value).child(key).update({  
+        volume:document.getElementById("volume").value,
+        satuan:document.getElementById("satuan").value,
+        biaya:newTotal
+      });
+      //alert(oldUraian + " <==> " + newUraian);
+      if (newUraian != oldUraian) {
+        database.ref("motor/"+noPol.value+"/pengeluaran/"+tahun.value+"/"+month.value).child(key).update({  
+          uraian:newUraian
+        });
+      }
+      modal.style.display = "none";
+      generateDataTable(noPol, month);
+      genereatePagu(noPol);
+    }    
+  }
+
+  function del(key) {
+    var noPol = document.getElementById("noPol");
+    var tahun = document.getElementById("tahun");
+    var bulan = document.getElementById("bulan");
+    database.ref("motor/"+noPol.value).child("pagu").on("value", (snap) => {
+      document.getElementById("delPagu").value = snap.val().value;
+    });
+    database.ref("motor/"+noPol.value+"/pengeluaran/"+tahun.value+"/"+bulan.value).child(key).on("value", (snap) => {
+      document.getElementById("delTotal").value = snap.val().biaya;
+    });
+    
+    var modal = document.getElementById("delModal");
+    modal.style.display = "block";
+    var xspan = document.getElementById("closeDelModal");
+    xspan.onclick = function() {
+        modal.style.display = "none";
+    }
+    var delNope = document.getElementById("delNope");
+    delNope.onclick = function() {
+      modal.style.display = "none";
+    }
+    
+    var delConfirm = document.getElementById("delConfirm");
+    delConfirm.onclick = function() {
+      var pagu = Number(document.getElementById("delPagu").value);
+      var total = Number(document.getElementById("delTotal").value);
+      pagu += total;
+      database.ref("motor/"+noPol.value+"/pengeluaran/"+tahun.value+"/"+bulan.value).child(key).remove();
+      database.ref("motor/"+noPol.value).child("pagu").update({value:pagu});
+      alert("data berhasil dihapus");
+      modal.style.display = "none";
+      generateDataTable(noPol,bulan);
+      genereatePagu(noPol);
+    }
+  }
+
+  var dataMotor = [];
+  database.ref("motor").once("value", (snap) => {
+    snap.forEach((child) => {
+      dataMotor.push(child.key);
+      document.getElementById("searchResults").innerHTML += "<li id='"+child.key+"' style='display:none;'><a href='#'>"+child.key+"</a></li>"
+    });
+  });
+  function clearSearchResults() {
+    for (let i = 0; i < dataMotor.length; i++) {        
+      document.getElementById(dataMotor[i]).style.display = "none";
+    }
+  }
+  function searching() {
+    var request, ul;
+    request = document.getElementById("search").value.toUpperCase();
+    ul = document.getElementById("searchResults");
+    if (request == "") {
+      clearSearchResults();
+    } else {
+      for (let i = 0; i < dataMotor.length; i++) {
+        if (dataMotor[i].toUpperCase().indexOf(request) > -1) {
+          document.getElementById(dataMotor[i]).style.display = "";
+          document.getElementById(dataMotor[i]).onclick = function() {
+            document.getElementById("search").value = dataMotor[i];
+            document.getElementById("noPol").value = dataMotor[i];
+            setNoPol();
+            clearSearchResults();
+          }
+        } else {
+          document.getElementById(dataMotor[i]).style.display = "none";
+        }
+      }
+    }
+  }
+
+  
+</script>
+</head>
+<body id="top">
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- Top Background Image Wrapper -->
+<div class="bgded overlay" style="background-image:url(https://cdp.azureedge.net/products/USA/DU/2018/MC/SPORT/XDIAVEL_S/50/THRILLING_BLACK/2000000020.jpg);"> 
+  <!-- ################################################################################################ -->
+  <div class="wrapper row1">
+    <header id="header" class="hoc clear"> 
+      <!-- ################################################################################################ -->
+      <div id="logo" class="fl_left">
+        <h1><a href="#">Data Pemeliharaan Inventaris</a></h1>
+      </div>
+      <nav id="mainav" class="fl_right">
+        <ul class="clear">
+          <li><a href="../home.html">Home</a></li>
+          <li><a href="inventaris.html">Inventaris</a></li>
+          <li class="active"><a class="drop" href="#">Data Pemeliharaan</a>
+            <ul>
+              <li><a href="data mobil.html">Mobil</a></li>
+              <li class="active"><a href="#">Motor</a></li>
+              <li><a href="data komputer.html">Komputer</a></li>
+              <li><a href="data tanaman.html">Tanaman</a></li>
+            </ul>
+          </li>
+          <li><a href="pagu.html">Pagu Baru</a></li>
+          <li><a class="drop" href="#" id="nick">
+          </a>
+            <ul>
+                <li><a href="../index.html" onclick="logout()">Keluar</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <!-- ################################################################################################ -->
+    </header>
+  </div>
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <section id="breadcrumb" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Data Kendaraan</a></li>
+      <li><a href="#">Motor</a></li>
+    </ul>
+    <!-- ################################################################################################ -->
+    <h6 class="heading">Tampilan Data Motor Pegawai</h6>
+    <!-- ################################################################################################ -->
+  </section>
+  <!-- ################################################################################################ -->
+</div>
+<!-- End Top Background Image Wrapper -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row3">
+  <main class="hoc container clear"> 
+    <!-- main body -->
+    <!-- ################################################################################################ -->
+    <div class="content"> 
+      <!-- ################################################################################################ -->
+      <div id="gallery">
+        <table style="width: auto; border: none; backface-visibility: hidden; padding: 0%;">
+          <tr>
+            <td>
+                <select id="noPol" onchange="setNoPol()">
+                    <option value="" selected disabled hidden>Nomor Polisi</option>
+                </select>
+            </td>
+            <td>
+                <select id="tahun" onchange="setYear()">
+                    <option value="" selected disabled hidden>Tahun</option>
+                </select>
+            </td>
+            <td>
+                <select id="bulan" onchange="setMonth()">
+                    <option value="" selected disabled hidden>Bulan</option>
+                </select>
+            </td>
+            <td>
+              <input type="text" id="search" onkeyup="searching()" placeholder="Cari nomor polisi.." style="width: 80%; text-transform: uppercase;">
+              <ul id="searchResults" style="list-style: none;"></ul>
+            </td>
+            <td>
+              <button type="button" class="btn" style="background: aqua; border: none;" id="exportToXls">Export ke Excel</button>
+            </td>
+            
+          </tr>
+        </table>
+        <script>
+          var Export = document.getElementById("exportToXls");
+          function convertToCSV(objArray) {
+              var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+              var str = '';
+
+              for (var i = 0; i < array.length; i++) {
+                  var line = '';
+                  for (var index in array[i]) {
+                      if (line != '') line += '\t'
+
+                      line += array[i][index];
+                  }
+
+                  str += line + '\r\n';
+              }
+
+              return str;
+          }
+
+          function exportCSVFile(headers, items, fileTitle) {
+              if (headers) {
+                  items.unshift(headers);
+              }
+              
+              // Convert Object to JSON
+              var jsonObject = JSON.stringify(items);
+
+              var csv = this.convertToCSV(jsonObject);
+
+              var exportedFilenmae = fileTitle + '.xls' || 'export.xls';
+              
+              var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              
+              if (navigator.msSaveBlob) { // IE 10+
+                  navigator.msSaveBlob(blob, exportedFilenmae);
+                  
+              } else {
+                  var link = document.createElement("a");
+                  if (link.download !== undefined) { // feature detection
+                      // Browsers that support HTML5 download attribute
+                      
+                      var url = URL.createObjectURL(blob);
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", exportedFilenmae);
+                      link.style.visibility = 'hidden';
+                      
+                      document.body.appendChild(link);
+                      
+                      link.click();
+                      document.body.removeChild(link);
+                      
+                  }
+              }
+              
+          }
+          
+          Export.onclick = function() {
+            var modal = document.getElementById("ExcelModal");
+            modal.style.display = "block";
+
+            var xBtn = document.getElementById("closeExcelModal");
+            xBtn.onclick = function() {
+              modal.style.display = "none";
+            }
+            // var noPol, tahun, bulan;
+            // noPol = document.getElementById("noPol");
+            // tahun = document.getElementById("tahun");
+            // bulan = document.getElementById("bulan");
+            // if (noPol.value == "" || (tahun.value == "" || bulan.value == "")) {
+            //   alert("Harap mengisi Nomor Polisi/ID, Bulan, dan Tahun pemeliharaan.");
+            // } else {
+            //   database.ref("motor/"+noPol.value+"/pengeluaran").child(tahun.value+"/"+bulan.value).on("value", (snap) => {
+            //     var headers = {
+            //       uraian: 'Uraian'.replace(/,/g, ''), // remove commas to avoid errors
+            //       satuan: "Satuan",
+            //       volume: "Volume",
+            //       total: "Total"
+            //     };
+            //     var items = [];
+            //     snap.forEach((child) => {
+            //       items.push({
+            //         uraian : child.val().uraian.replace(/,/g, ''),
+            //         satuan : child.val().satuan,
+            //         volume : child.val().volume,
+            //         total : child.val().biaya
+            //       });
+            //     });
+            //     var title = "Motor - "+noPol.value+" - "+bulan.value+" "+tahun.value;
+            //     exportCSVFile(headers, items, title);
+            //   });
+            // }
+          }
+        </script>
+        <h5 id="jmlPagu"></h5>
+        <h5 id="merk"></h5>
+        <table id="tblData"></table>
+
+        <!-- The Modal -->
+        <div id="myModal" class="modal">
+
+          <!-- Modal content -->
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="close" id="close">&times;</span>
+              <h2>Input Data</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+              <div align="center"><b>Pagu</b></div>
+              <input type="number" id="Pagu" readonly disabled>
+              <div align="center"><b>Nomor Polisi</b></div>
+              <input type="text" id="nomorPolisi" readonly disabled>
+              <div align="center"><b>Uraian</b></div>
+              <textarea id="uraian"></textarea>
+              <div align="center"><b>Satuan</b></div>
+              <input type="number" id="satuan" placeholder="harga satuan">
+              <div align="center"><b>Volume</b></div>
+              <input type="number" id="volume" placeholder="volume">
+              <div align="center"><b>Total</b></div>
+              <input type="number" id="biaya_1" readonly placeholder="total">
+            </div>
+            <button type="button" class="btn" style="margin-top:1%; background: green; margin-left: 43%; margin-bottom: 1%;" id="submitBtn">Submit</button>
+            <div class="modal-footer">
+              <h3>Mohon mengisi selengkap-lengkapnya</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The Deletation Modal -->
+      <div id="delModal" class="modal">
+          <!-- Modal content -->
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="close" id="closeDelModal">&times;</span>
+              <h2>Konfirmasi penghapusan:</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <input type="hidden" id="delPagu">
+                <input type="hidden" id="delTotal">
+                <button type="button" class="btn" style="margin-top:1%; background: red; 
+                margin-left: 43%; margin-bottom: 1%; width: 30%;" id="delConfirm">Lanjut</button>
+                <button type="button" class="btn" style="margin-top:1%; background: green;
+                 margin-left: 43%; margin-bottom: 1%; width: 30%;" id="delNope">Batal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Export to Excel Modal -->
+      <div id="ExcelModal" class="modal">
+          <!-- Modal content -->
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="close" id="closeExcelModal">&times;</span>
+              <h2>Opsi export:</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <select id="id_barang">
+                  <option value="" selected disabled hidden>Nomor Polisi</option>
+                  <option value="all">Semua Motor</option>
+                  <script>
+                    database.ref("motor").on("value", (snap) => {
+                      snap.forEach((child) => {
+                        document.getElementById("id_barang").innerHTML += '<option value="'+child.key+'">'+child.key+'</option>';
+                      })
+                    })
+                  </script>
+                </select>
+                <input type="text" id="tahun" placeholder="tahun">
+                <select id="bulan">
+                  <option value="" selected disabled hidden>Bulan</option>
+                  <option value="Januari">Semua Bulan</option>
+                  <option value="Januari">Januari</option>
+                  <option value="Februari">Februari</option>
+                  <option value="Maret">Maret</option>
+                  <option value="April">April</option>
+                  <option value="Mei">Mei</option>
+                  <option value="Juni">Juni</option>
+                  <option value="Juli">Juli</option>
+                  <option value="Agustus">Agustus</option>
+                  <option value="September">September</option>
+                  <option value="Oktober">Oktober</option>
+                  <option value="November">November</option>
+                  <option value="Desember">Desember</option>
+                </select>
+                <button type="button" class="btn" style="margin-top:1%; background: red; 
+                margin-left: 43%; margin-bottom: 1%; width: 30%;" id="ExcelConfirm">Lanjut</button>
+                <button type="button" class="btn" style="margin-top:1%; background: green;
+                 margin-left: 43%; margin-bottom: 1%; width: 30%;" id="ExcelNope">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ################################################################################################ -->
+    <div class="clear"></div>
+  </main>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row4">
+  <footer id="footer" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <div class="one_quarter first">
+      <h6 class="heading">Kontak Kami</h6>
+      <p>Alamat : <br/>Jl. Raya Sempidi, Kecamatan Mengwi, Kabupaten Badung, Bali 80351</p>
+      <p>Telp : (0361) 9009239 , (0361) 9009242 </p>
+      <p>Email : bappedabadung@gmail.com </p>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">Temukan Kami Di</h6>
+      <ul class="faico clear">
+        <li><a class="faicon-facebook" href="https://www.facebook.com/Bappeda-Kabupaten-Badung-790957884347687/" target="_blank"> <i class="fa fa-facebook"></i></a></li>
+        <li><a class="faicon-twitter" href="https://twitter.com/bappedabadung" target="_blank"><i class="fa fa-twitter"></i></a></li>
+        <li><a class="faicon-instagram" href="https://www.instagram.com/bappeda.badung/" target="_blank"><i class="fa fa-instagram"></i></a></li>
+        <li><a class="faicon-youtube" href="https://www.youtube.com/channel/UCMaGnf90ow6HfClr9fIga_g" target="_blank"><i class="fa fa-youtube"></i></a></li>
+      </ul>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">About Bappeda Badung</h6>
+      <ul class="nospace linklist">
+        <li><a href="http://bappeda.badungkab.go.id/home" target="_blank">Website Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/profil-bappeda-badung" target="_blank">Profil Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/visi-dan-misi" target="_blank">Visi dan Misi</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/struktur-organisasi" target="_blank">Struktur Organisasi</a></li>
+      </ul>
+    </div>
+    <!-- ################################################################################################ -->
+  </footer>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row5">
+  <div id="copyright" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <p class="fl_left">Copyright &copy; 2018 - All Rights Reserved - <a href="#">Bappeda Kabupaten Badung</a></p>
+    <!-- ################################################################################################ -->
+  </div>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<a id="backtotop" href="#top"><i class="fa fa-chevron-up"></i></a>
+</body>
+</html>

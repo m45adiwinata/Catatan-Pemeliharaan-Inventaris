@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!--
+Template Name: Hoppler
+Author: <a href="http://www.os-templates.com/">OS Templates</a>
+Author URI: http://www.os-templates.com/
+Licence: Free to use under our free template licence terms
+Licence URI: http://www.os-templates.com/template-terms
+-->
+<html lang="">
+<!-- To declare your language - read more here: https://www.w3.org/International/questions/qa-html-language-declarations -->
+<head>
+<title>Data Inventaris Pegawai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="layout/styles/layout.css" rel="stylesheet" type="text/css" media="all">
+<script src="https://www.gstatic.com/firebasejs/5.5.3/firebase.js"></script>
+<script src="layout/scripts/firebase.js"></script>
+<script>
+  function masuk_user() {
+      var email = document.getElementById("username").value;
+      var password = document.getElementById("password").value;
+      firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error) {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          // ...
+          alert("error : " + errorMessage);
+      });
+  }
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      // User is signed in.
+
+      // Check browser support
+      if (typeof(Storage) !== "undefined") {        
+              sessionStorage.setItem('currentUser', JSON.stringify(user));
+              window.location = "home.html";
+          } else {
+              alert("Sorry, your browser does not support Web Storage...");
+          }
+    } else {
+      // User is signed out.
+      // ...
+    }
+  });
+</script>
+</head>
+<body id="top">
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- Top Background Image Wrapper -->
+<div class="bgded overlay" style="background-image:url('http://static.panoramio.com/photos/large/21304332.jpg');"> 
+  <!-- ################################################################################################ -->
+  <div class="wrapper row1">
+    <header id="header" class="hoc clear"> 
+      <!-- ################################################################################################ -->
+      <div id="logo" class="fl_left">
+        <h1><a href="index.html">Data Pemeliharaan Inventaris Pegawai Bappeda Badung</a></h1>
+      </div>
+      <nav id="mainav" class="fl_right">
+        <ul class="clear">
+            <li><a href="signup.html">Daftar / Buat Akun</a></li>
+        </ul>
+      </nav>
+      <!-- ################################################################################################ -->
+    </header>
+  </div>
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <div id="pageintro" class="hoc clear">
+    <article> 
+      <!-- ################################################################################################ -->
+      <h3 class="heading">Login User</h3>
+        <div id="signing">
+            <label for="name">Email <span>*</span></label>
+            <input type="email" name="username" id="username" value="" size="22" required>
+            <label for="password">Password <span>*</span></label>
+            <input type="password" name="password" id="password" value="" size="22" required>
+            <div class="block clear">
+            </div>
+            <div>
+                <button class="btn" id="submit" type="submit" onclick="masuk_user()">Masuk</button>
+                <button class="btn" id="reset">Reset</button>
+            </div>
+        </div>
+        <script>
+          document.getElementById("password").onkeyup = function(key) {
+            if (key.which == 13) {
+              masuk_user();
+            }
+          }
+          var reset = document.getElementById("reset");
+          reset.onclick = function() {
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+          }
+        </script>
+      <!-- ################################################################################################ -->
+    </article>
+  </div>
+  <!-- ################################################################################################ -->
+</div>
+<div class="wrapper row4">
+  <footer id="footer" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <div class="one_quarter first">
+      <h6 class="heading">Kontak Kami</h6>
+      <p>Alamat : <br/>Jl. Raya Sempidi, Kecamatan Mengwi, Kabupaten Badung, Bali 80351</p>
+      <p>Telp : (0361) 9009239 , (0361) 9009242 </p>
+      <p>Email : bappedabadung@gmail.com </p>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">Temukan Kami Di</h6>
+      <ul class="faico clear">
+        <li><a class="faicon-facebook" href="https://www.facebook.com/Bappeda-Kabupaten-Badung-790957884347687/" target="_blank"> <i class="fa fa-facebook"></i></a></li>
+        <li><a class="faicon-twitter" href="https://twitter.com/bappedabadung" target="_blank"><i class="fa fa-twitter"></i></a></li>
+        <li><a class="faicon-instagram" href="https://www.instagram.com/bappeda.badung/" target="_blank"><i class="fa fa-instagram"></i></a></li>
+        <li><a class="faicon-youtube" href="https://www.youtube.com/channel/UCMaGnf90ow6HfClr9fIga_g" target="_blank"><i class="fa fa-youtube"></i></a></li>
+      </ul>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">About Bappeda Badung</h6>
+      <ul class="nospace linklist">
+        <li><a href="http://bappeda.badungkab.go.id/home" target="_blank">Website Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/profil-bappeda-badung" target="_blank">Profil Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/visi-dan-misi" target="_blank">Visi dan Misi</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/struktur-organisasi" target="_blank">Struktur Organisasi</a></li>
+      </ul>
+    </div>
+    <!-- ################################################################################################ -->
+  </footer>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row5">
+  <div id="copyright" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <p class="fl_left">Copyright &copy; 2018 - All Rights Reserved - <a href="#">Bappeda Kabupaten Badung</a></p>
+    <!-- <p class="fl_right">Template by <a target="_blank" href="http://www.os-templates.com/" title="Free Website Templates">OS Templates</a></p> -->
+    <!-- ################################################################################################ -->
+  </div>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<a id="backtotop" href="#top"><i class="fa fa-chevron-up"></i></a>
+<!-- JAVASCRIPTS -->
+<script src="layout/scripts/jquery.min.js"></script>
+<script src="layout/scripts/jquery.backtotop.js"></script>
+<script src="layout/scripts/jquery.mobilemenu.js"></script>
+</body>
+</html>

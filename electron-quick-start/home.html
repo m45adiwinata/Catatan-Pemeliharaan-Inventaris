@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<!--
+Template Name: Hoppler
+Author: <a href="http://www.os-templates.com/">OS Templates</a>
+Author URI: http://www.os-templates.com/
+Licence: Free to use under our free template licence terms
+Licence URI: http://www.os-templates.com/template-terms
+-->
+<html lang="">
+<!-- To declare your language - read more here: https://www.w3.org/International/questions/qa-html-language-declarations -->
+<head>
+<title>Data Inventaris Pegawai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="layout/styles/layout.css" rel="stylesheet" type="text/css" media="all">
+<link rel="stylesheet" href="datepicker.min.css">
+<script src="https://www.gstatic.com/firebasejs/5.5.3/firebase.js"></script>
+<script src="layout/scripts/firebase.js"></script>
+<script>
+  firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+          var userId = user.uid;
+          database.ref('users/' + userId).once('value').then(function(snapshot) {
+            var username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
+            document.getElementById("nick").innerHTML = username;
+          });
+      } else {
+          //alert("ga masook");
+          // No user is signed in.
+      }
+  });
+  function logout() {
+      firebase.auth().signOut().then(function() {
+          // Sign-out successful.
+          sessionStorage.clear();
+          window.location = "index.html";
+      }).catch(function(error) {
+          // An error happened.
+          alert("error" + error);
+      });
+  }
+
+  var database = firebase.database();
+
+  function submitInput() {
+    let jenis = document.getElementById("jenis").value;
+    var noPol = document.getElementById("no_polisi").value;
+    var tahun = document.getElementById("tahun").value;
+    var bulan = document.getElementById("bulan").value;
+    var tanggal = document.getElementById("tanggal").value +" "+bulan+" "+tahun;
+    var uraian = document.getElementById("uraian_1").value;
+    var volume = Number(document.getElementById("volume").value);
+    var satuan = Number(document.getElementById("satuan").value);
+    var biaya = Number(document.getElementById("biaya_1").value);
+    let time = new Date().getDate() +"-"+ new Date().getMonth() +"-"+new Date().getFullYear();
+    if (jenis == "" || noPol == "" ) {
+      alert("Harap mengisi Jenis dan Nomor Polisi/ ID Inventaris.");
+    } else {
+      let newData = database.ref(jenis+"/"+noPol).child("pengeluaran/"+tahun+"/"+bulan).push();
+      var userId = firebase.auth().currentUser.uid;
+      newData.set({
+        uraian: uraian,
+        volume: volume,
+        satuan: satuan,
+        biaya: biaya,
+        diinput: time,
+        inputBy: userId,
+        tanggal: tanggal
+      });
+      let pagu = Number(document.getElementById("Pagu").value);
+      let paguNow = pagu - biaya;
+      database.ref(jenis+"/"+noPol).child("pagu").update({value:paguNow});
+      modal.style.display = "none";
+    }
+  }
+  
+</script>
+</head>
+<body id="top">
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- Top Background Image Wrapper -->
+<div class="bgded overlay" style="background-image:url('bg1.jpg');"> 
+  <!-- ################################################################################################ -->
+  <div class="wrapper row1">
+    <header id="header" class="hoc clear"> 
+      <!-- ################################################################################################ -->
+      <div id="logo" class="fl_left">
+         <!-- <img src="bp1.png" style="width:10%;height:1%; float: left; margin-right: 5%;"> -->
+     <h1>Bappeda Kabupaten Badung</h1>
+      </div>
+      <nav id="mainav" class="fl_right">
+        <ul class="clear">
+          <li class="active"><a href="#">Home</a></li>
+          <li><a href="pages/inventaris.html">Inventaris</a></li>
+          <li><a class="drop" href="#">Data Pemeliharaan</a>
+            <ul>
+              <li><a href="pages/data mobil.html">Mobil</a></li>
+              <li><a href="pages/data motor.html">Motor</a></li>
+              <li><a href="pages/data komputer.html">Komputer</a></li>
+              <li><a href="pages/data tanaman.html">Tanaman</a></li>
+            </ul>
+          </li>
+          <li><a href="pages/pagu.html">Pagu Baru</a></li>
+          <li><a class="drop" href="#" id="nick">
+          </a>
+            <ul>
+              <li><a href="index.html" onclick="logout()">Keluar</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <!-- ################################################################################################ -->
+    </header>
+  </div>
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <div id="pageintro" class="hoc clear">
+    <article> 
+      <!-- ################################################################################################ -->
+      <h3 class="heading", style=margin-top:-10%;>Sistem Informasi Pemeliharaan Inventaris Pegawai</h3>
+      <!-- <p>Nunc gravida sem dui tempus nunc at tristique magna turpis in magna nunc vitae vestibulum ligula mauris malesuada</p> -->
+      <p class="font-x1 uppercase bold">Badan Perencanaan Pembangunan Daerah</p>
+      <footer><a class="btn" href="#" id="myBtn">Input Data Pemeliharaan</a></footer>
+      
+      <script src="datepicker.min.js"></script>
+      
+      <!-- The Modal -->
+      <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+          <div class="modal-header">
+            <span class="close" id="close">&times;</span>
+            <h1>Input Data</h1>
+          </div>
+          <div class="modal-body" id="modal-body">
+            <label for="Pagu">Pagu </label>
+            <input type="number" id="Pagu" readonly>
+            <select id="jenis">
+              <option value="motor">Motor</option>
+              <option value="mobil">Mobil</option>
+              <option value="komputer">Komputer</option>
+              <option value="tanaman">Tanaman</option>
+            </select>
+            <select id="no_polisi">
+                <option value="" selected disabled hidden>Nomor Polisi/ Kode Barang</option>
+            </select>
+            <input type="number" id="tahun" placeholder="Tahun">
+            <script>
+              document.getElementById("tahun").value = new Date().getFullYear();
+            </script>
+            <select id="bulan">
+              <option value="Januari">Januari</option>
+              <option value="Februari">Februari</option>
+              <option value="Maret">Maret</option>
+              <option value="April">April</option>
+              <option value="Mei">Mei</option>
+              <option value="Juni">Juni</option>
+              <option value="Juli">Juli</option>
+              <option value="Agustus">Agustus</option>
+              <option value="September">September</option>
+              <option value="Oktober">Oktober</option>
+              <option value="November">November</option>
+              <option value="Desember">Desember</option>
+            </select>
+            <input type="text" id="tanggal" placeholder="tanggal">
+            <textarea id="uraian_1" placeholder="Uraian"></textarea>            
+            <input type="number" id="volume" placeholder="volume">
+            <input type="number" id="satuan" placeholder="harga satuan">
+            <input type="number" id="biaya_1" readonly placeholder="total">
+          </div>
+          <button type="button" class="btn" style="margin-top:2%; background: green;" onclick="submitInput()">Submit</button>
+          <div class="modal-footer">
+            <h3>Mohon mengisi selengkap-lengkapnya</h3>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        //const picker = datepicker("#tanggal", options);
+        var database = firebase.database();
+      var jenis = document.getElementById("jenis");
+      var pagu = document.getElementById("Pagu");
+      var noPol = document.getElementById("no_polisi");
+      // Get the modal
+        var modal = document.getElementById('myModal');
+
+      // Get the button that opens the modal
+      var btn = document.getElementById("myBtn");
+
+      // Get the <span> element that closes the modal
+      var span = document.getElementsByClassName("close")[0];
+
+      // When the user clicks the button, open the modal 
+      btn.onclick = function() {
+          modal.style.display = "block";
+          //alert(noPol.value);
+      }
+
+      // When the user clicks on <span> (x), close the modal
+      var xspan = document.getElementById("close");
+      
+      xspan.onclick = function() {
+          //document.getElementById("modal-body").innerHTML = modal_content;
+          modal.style.display = "none";
+          sessionStorage.setItem("totalInput","1");
+      }
+
+      // When the user clicks anywhere outside of the modal, close it
+      window.onclick = function(event) {
+          if (event.target == modal) {
+              //document.getElementById("modal-body").innerHTML = modal_content;
+              modal.style.display = "none";
+              sessionStorage.setItem("totalInput","1");
+          }
+      }
+    
+      
+      jenis.onchange = function() {
+        pagu.value = null;
+        document.getElementById("no_polisi").innerHTML = '<option value="" selected disabled hidden>Nomor Polisi/ID Barang</option>';
+        database.ref(jenis.value).once('value', (snap) => {
+          snap.forEach((child) => {
+            document.getElementById("no_polisi").innerHTML += 
+            "<option value='"+child.key+"'>"+child.key+"</option>";
+          });
+        });
+      }
+
+      database.ref(jenis.value).once('value', (snap) => {
+        snap.forEach((child) => {
+          document.getElementById("no_polisi").innerHTML += 
+          "<option value='"+child.key+"'>"+child.key+"</option>";
+        });
+      });
+      
+      
+      noPol.onclick = function() {
+        database.ref(jenis.value+"/"+noPol.value+"/pagu").on("value", (snap) => {
+          pagu.value = Number(snap.val().value);
+        });
+      }
+      
+      var satuan = document.getElementById("satuan");
+      var volume = document.getElementById("volume");
+      var total = document.getElementById("biaya_1");
+      satuan.onchange = function() {
+        total.value = Number(satuan.value) * Number(volume.value);
+      }
+      volume.onchange = function() {
+        total.value = Number(satuan.value) * Number(volume.value);
+      }
+      </script>
+      <!-- ################################################################################################ -->
+    </article>
+  </div>
+  <!-- ################################################################################################ -->
+</div>
+<!-- End Top Background Image Wrapper -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row4">
+  <footer id="footer" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <div class="one_quarter first">
+      <h6 class="heading">Kontak Kami</h6>
+      <p>Alamat : <br/>Jl. Raya Sempidi, Kecamatan Mengwi, Kabupaten Badung, Bali 80351</p>
+      <p>Telp : (0361) 9009239 , (0361) 9009242 </p>
+      <p>Email : bappedabadung@gmail.com </p>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">Temukan Kami Di</h6>
+      <ul class="faico clear">
+        <li><a class="faicon-facebook" href="https://www.facebook.com/Bappeda-Kabupaten-Badung-790957884347687/" target="_blank"> <i class="fa fa-facebook"></i></a></li>
+        <li><a class="faicon-twitter" href="https://twitter.com/bappedabadung" target="_blank"><i class="fa fa-twitter"></i></a></li>
+        <li><a class="faicon-instagram" href="https://www.instagram.com/bappeda.badung/" target="_blank"><i class="fa fa-instagram"></i></a></li>
+        <li><a class="faicon-youtube" href="https://www.youtube.com/channel/UCMaGnf90ow6HfClr9fIga_g" target="_blank"><i class="fa fa-youtube"></i></a></li>
+      </ul>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">About Bappeda Badung</h6>
+      <ul class="nospace linklist">
+        <li><a href="http://bappeda.badungkab.go.id/home" target="_blank">Website Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/profil-bappeda-badung" target="_blank">Profil Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/visi-dan-misi" target="_blank">Visi dan Misi</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/struktur-organisasi" target="_blank">Struktur Organisasi</a></li>
+      </ul>
+    </div>
+    <!-- ################################################################################################ -->
+  </footer>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row5">
+  <div id="copyright" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <p class="fl_left">Copyright &copy; 2018 - All Rights Reserved - <a href="#">Bappeda Kabupaten Badung</a></p>
+    <!-- ################################################################################################ -->
+  </div>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<a id="backtotop" href="#top"><i class="fa fa-chevron-up"></i></a>
+</body>
+</html>

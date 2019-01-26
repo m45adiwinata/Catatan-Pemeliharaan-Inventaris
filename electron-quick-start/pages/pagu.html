@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<!--
+Template Name: Hoppler
+Author: <a href="http://www.os-templates.com/">OS Templates</a>
+Author URI: http://www.os-templates.com/
+Licence: Free to use under our free template licence terms
+Licence URI: http://www.os-templates.com/template-terms
+-->
+<html lang="">
+<!-- To declare your language - read more here: https://www.w3.org/International/questions/qa-html-language-declarations -->
+<head>
+<title>Data Inventaris Pegawai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="../layout/styles/layout.css" rel="stylesheet" type="text/css" media="all">
+<script src="https://www.gstatic.com/firebasejs/5.5.3/firebase.js"></script>
+<script src="../layout/scripts/firebase.js"></script>
+<script>
+  var database = firebase.database();
+  firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+          var userId = user.uid;
+          database.ref('users/' + userId).once('value').then(function(snapshot) {
+            var username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
+            document.getElementById("nick").innerHTML = username;
+          });
+      } else {
+          //alert("ga masook");
+          // No user is signed in.
+      }
+  });
+  function logout() {
+      firebase.auth().signOut().then(function() {
+          // Sign-out successful.
+          sessionStorage.clear();
+          window.location = "../index.html";
+      }).catch(function(error) {
+          // An error happened.
+          alert("error" + error);
+      });
+  }
+</script>
+</head>
+<body id="top">
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- Top Background Image Wrapper -->
+<div class="bgded overlay" style="background-image:url(https://png.pngtree.com/thumb_back/fw800/back_pic/03/78/50/1157c1597e217cc.jpg);"> 
+  <!-- ################################################################################################ -->
+  <div class="wrapper row1">
+    <header id="header" class="hoc clear"> 
+      <!-- ################################################################################################ -->
+      <div id="logo" class="fl_left">
+        <h1><a href="../home.html">Daftar Inventaris Baru</a></h1>
+      </div>
+      <nav id="mainav" class="fl_right">
+        <ul class="clear">
+          <li><a href="../home.html">Home</a></li>
+          <li><a href="inventaris.html">Inventaris</a></li>
+          <li><a class="drop" href="#">Data Pemeliharaan</a>
+            <ul>
+              <li><a href="data mobil.html">Mobil</a></li>
+              <li><a href="data motor.html">Motor</a></li>
+              <li><a href="data komputer.html">Komputer</a></li>
+              <li><a href="data tanaman.html">Tanaman</a></li>
+            </ul>
+          </li>
+          <li class="active"><a href="#">Pagu Baru</a></li>
+          <li><a class="drop" href="#" id="nick">
+          </a>
+            <ul>
+                <li><a href="index.html" onclick="logout()">Keluar</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <!-- ################################################################################################ -->
+    </header>
+  </div>
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <section id="breadcrumb" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Pagu Baru</a></li>
+    </ul>
+    <!-- ################################################################################################ -->
+    <h6 class="heading">Input Inventaris dan Pagu Baru</h6>
+    <!-- ################################################################################################ -->
+  </section>
+  <!-- ################################################################################################ -->
+</div>
+<!-- End Top Background Image Wrapper -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row3">
+  <main class="hoc container clear"> 
+    <!-- main body -->
+    <!-- ################################################################################################ -->
+    <div class="content"> 
+      <!-- ################################################################################################ -->
+      <div id="gallery">
+        <select id="jenis" style="margin: auto; margin-bottom: 2%;">
+          <option value="motor">Motor</option>
+          <option value="mobil">Mobil</option>
+          <option value="komputer">Komputer</option>
+          <option value="tanaman">Tanaman</option>
+        </select>
+        <input type="text" id="noPol" placeholder="Nomor Polisi/ ID Barang" style="text-transform: uppercase;">
+        <input type="text" id="merk" placeholder="Merk/ Nama Barang" style="text-transform:capitalize;">
+        <input type="number" id="jmlPagu" placeholder="Jumlah Pagu">
+        <div align="center"><button type="button" class="btn" id="submit">Input Pagu</button></div>
+      </div>
+
+      <script>
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+        var btn = document.getElementById("submit");
+        var database = firebase.database();
+        btn.onclick = function() {
+          let jenis = document.getElementById("jenis").value;
+          let noPol = document.getElementById("noPol").value.toUpperCase();
+          let merk = capitalizeFirstLetter(document.getElementById("merk").value);
+          let pagu = Number(document.getElementById("jmlPagu").value);
+          if (noPol == "" || pagu == 0) {
+            alert("Harap lengkapi form.");
+          } else {
+            database.ref(jenis+"/"+noPol).child("pagu").set({
+              value: pagu
+            });
+            database.ref(jenis+"/"+noPol).child("merk").set({
+              value: merk
+            });
+            database.ref(jenis+"/"+noPol).child("paguawal").set({
+              value: pagu
+            });
+            alert("Data Kendaraan/Barang berhasil ditambahkan.");
+            clearing();
+          }
+        }
+
+        function clearing() {
+          document.getElementById("noPol").value = "";
+          document.getElementById("merk").value = "";
+          document.getElementById("jmlPagu").value = "";
+        }
+      </script>
+      <!-- ################################################################################################ -->
+    </div>
+    <!-- ################################################################################################ -->
+    <!-- / main body -->
+    <div class="clear"></div>
+  </main>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row4">
+  <footer id="footer" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <div class="one_quarter first">
+      <h6 class="heading">Kontak Kami</h6>
+      <p>Alamat : <br/>Jl. Raya Sempidi, Kecamatan Mengwi, Kabupaten Badung, Bali 80351</p>
+      <p>Telp : (0361) 9009239 , (0361) 9009242 </p>
+      <p>Email : bappedabadung@gmail.com </p>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">Temukan Kami Di</h6>
+      <!-- <nav>
+        <ul class="nospace">
+          <li><a href="index.html"><i class="fa fa-lg fa-home"></i></a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Cookies</a></li>
+          <li><a href="#">Disclaimer</a></li>
+        </ul>
+      </nav> -->
+      <ul class="faico clear">
+        <li><a class="faicon-facebook" href="https://www.facebook.com/Bappeda-Kabupaten-Badung-790957884347687/" target="_blank"> <i class="fa fa-facebook"></i></a></li>
+        <li><a class="faicon-twitter" href="https://twitter.com/bappedabadung" target="_blank"><i class="fa fa-twitter"></i></a></li>
+        <li><a class="faicon-instagram" href="https://www.instagram.com/bappeda.badung/" target="_blank"><i class="fa fa-instagram"></i></a></li>
+        <li><a class="faicon-youtube" href="https://www.youtube.com/channel/UCMaGnf90ow6HfClr9fIga_g" target="_blank"><i class="fa fa-youtube"></i></a></li>
+        <!-- <li><a class="faicon-google-plus" href="#"><i class="fa fa-google-plus"></i></a></li>
+        <li><a class="faicon-vk" href="#"><i class="fa fa-vk"></i></a></li> -->
+      </ul>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">About Bappeda Badung</h6>
+      <ul class="nospace linklist">
+        <li><a href="http://bappeda.badungkab.go.id/home" target="_blank">Website Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/profil-bappeda-badung" target="_blank">Profil Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/visi-dan-misi" target="_blank">Visi dan Misi</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/struktur-organisasi" target="_blank">Struktur Organisasi</a></li>
+      </ul>
+    </div>
+    <!-- ################################################################################################ -->
+  </footer>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row5">
+  <div id="copyright" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <p class="fl_left">Copyright &copy; 2018 - All Rights Reserved - <a href="#">Bappeda Kabupaten Badung</a></p>
+    <!-- <p class="fl_right">Template by <a target="_blank" href="http://www.os-templates.com/" title="Free Website Templates">OS Templates</a></p> -->
+    <!-- ################################################################################################ -->
+  </div>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<a id="backtotop" href="#top"><i class="fa fa-chevron-up"></i></a>
+<!-- JAVASCRIPTS -->
+<script src="layout/scripts/jquery.min.js"></script>
+<script src="layout/scripts/jquery.backtotop.js"></script>
+<script src="layout/scripts/jquery.mobilemenu.js"></script>
+</body>
+</html>

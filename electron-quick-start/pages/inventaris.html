@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<!--
+Template Name: Hoppler
+Author: <a href="http://www.os-templates.com/">OS Templates</a>
+Author URI: http://www.os-templates.com/
+Licence: Free to use under our free template licence terms
+Licence URI: http://www.os-templates.com/template-terms
+-->
+<html lang="">
+<!-- To declare your language - read more here: https://www.w3.org/International/questions/qa-html-language-declarations -->
+<head>
+<title>Data Inventaris Pegawai</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="../layout/styles/layout.css" rel="stylesheet" type="text/css" media="all">
+<script src="https://www.gstatic.com/firebasejs/5.5.3/firebase.js"></script>
+<script src="../layout/scripts/firebase.js"></script>
+
+<script>
+  var database = firebase.database();
+  firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+          var userId = user.uid;
+          database.ref('users/' + userId).once('value').then(function(snapshot) {
+            var username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
+            document.getElementById("nick").innerHTML = username;
+          });
+      } else {
+          //alert("ga masook");
+          // No user is signed in.
+      }
+  });
+  function logout() {
+      firebase.auth().signOut().then(function() {
+          // Sign-out successful.
+          sessionStorage.clear();
+          window.location = "../index.html";
+      }).catch(function(error) {
+          // An error happened.
+          alert("error" + error);
+      });
+  }
+  
+  var inventaris = [];
+  database.ref("Jenis").once("value", (snap) => {
+      snap.val().forEach(element => {
+          inventaris.push(element);
+          document.getElementById("jenis").innerHTML += '<option value="'+element+'">'+element+'</option>';
+      });
+  });
+  var allData;
+  database.on("value",(snap) => {
+    allData = JSON.parse(snap.val());
+  });
+
+  function setJenis() {
+      var jenis = document.getElementById("jenis");
+      generateDataTable(jenis);    
+  }
+  function generateDataTable(jenis) {
+      var tbl = document.getElementById("tblData");
+      database.ref(jenis.value).on("value", (snap) => {
+        if (snap.val() == null) {
+            tbl.innerHTML = 'Belum ada inventaris tercatat. <br>Silahkan klik "PAGU BARU" untuk mendaftarkan inventaris.';
+        } else {
+            tbl.innerHTML = '<tr>'
+                            +'<th>Nomor Polisi/ ID</th>'
+                            +'<th>Merk</th>'
+                            +'<th>Pagu Awal</th>'
+                            +'<th>Terpakai</th>'
+                            +'<th>Sisa Pagu</th>'
+                            +'<th colspan=2>Pilihan</th>'
+                            +'</tr>';
+            snap.forEach((child) => {
+              //alert(child.key+" - "+child.val().merk.value+" - "+child.val().paguawal.value+" - "+child.val().pagu.value);
+                var totalP = child.val().paguawal.value - child.val().pagu.value;
+                tbl.innerHTML += '<tr>'
+                    +'<td>'+child.key+'</td>'
+                    +'<td>'+child.val().merk.value+'</td>'
+                    +'<td>Rp '+child.val().paguawal.value+'</td>'
+                    +'<td>Rp '+totalP+'</td>'
+                    +'<td>Rp '+child.val().pagu.value+'</td>'
+                    +'<td><button type="button" class="btn" onclick="update(\''+child.key+'\')">ubah</button></td>'
+                    +'<td><button type="button" class="btn" onclick="del(\''+child.key+'\')">hapus</button></td>'
+                    +'</tr>';
+            });
+        }
+      });
+  }
+
+  function del(key) {
+    var modal = document.getElementById("delModal");
+    modal.style.display = "block";
+    var xspan = document.getElementById("closeDelModal");
+    xspan.onclick = function() {
+        modal.style.display = "none";
+    }
+    var delNope = document.getElementById("delNope");
+    delNope.onclick = function() {
+      modal.style.display = "none";
+    }
+    
+    var delConfirm = document.getElementById("delConfirm");
+    var jenis = document.getElementById("jenis");
+    delConfirm.onclick = function() {
+      database.ref(jenis.value).child(key).remove();
+      modal.style.display = "none";
+    }
+  }
+
+  function update(key) {
+    var modal = document.getElementById('myModal');
+    var span = document.getElementsByClassName("close")[0];
+    modal.style.display = "block";
+    var xspan = document.getElementById("close");
+    xspan.onclick = function() {
+        modal.style.display = "none";
+    }
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+    
+    var jenis = document.getElementById("jenis");
+    var noPol = document.getElementById("noPol");
+    var newData = [];
+    database.ref(jenis.value).child(key).on("value", (snap) => {
+        newData = snap.val();
+        noPol.value = key;
+        document.getElementById("merk").value = snap.val().merk.value;
+        document.getElementById("pagu").value = snap.val().pagu.value;
+    });
+    document.getElementById("submitBtn").onclick = function() {
+      var merk = document.getElementById("merk").value;
+      var pagu = document.getElementById("pagu").value;
+      database.ref(jenis.value).child(noPol.value).set(newData);
+      database.ref(jenis.value+"/"+noPol.value).child("merk").update({
+        value:merk
+      });
+      database.ref(jenis.value+"/"+noPol.value).child("pagu").update({
+        value: pagu
+      });
+      if(noPol.value != key) {
+        database.ref(jenis.value).child(key).remove();
+      }
+      modal.style.display = "none";
+    }
+  }
+  // function getTotalPengeluaran(id, tahun) {
+  //   database.ref("mobil/"+id).child("pengeluaran/"+tahun).on("value", (snap) => {
+  //     var totalP = 0;
+  //     snap.forEach((child) => {
+  //       child.forEach((panak) => {
+  //         totalP += panak.val().biaya;
+  //       })
+  //     })
+  //     alert(allData);
+  //     return totalP.toString();
+  //   })
+  // }
+  //4034300 ==== 9986000
+  //4900000 ==== 9602000
+</script>
+</head>
+<body id="top">
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- Top Background Image Wrapper -->
+<div class="bgded overlay" style="background-image:url(https://hbr.org/resources/images/article_assets/2015/06/JUN15_24_155284809.jpg);"> 
+  <!-- ################################################################################################ -->
+  <div class="wrapper row1">
+    <header id="header" class="hoc clear"> 
+      <!-- ################################################################################################ -->
+      <div id="logo" class="fl_left">
+        <h1><a href="#">Data Inventaris</a></h1>
+      </div>
+      <nav id="mainav" class="fl_right">
+        <ul class="clear">
+          <li><a href="../home.html">Home</a></li>
+          <li class="active"><a href="#">Inventaris</a></li>
+          <li><a class="drop" href="#">Data Pemeliharaan</a>
+            <ul>
+              <li><a href="data mobil.html">Mobil</a></li>
+              <li><a href="data motor.html">Motor</a></li>
+              <li><a href="data komputer.html">Komputer</a></li>
+              <li><a href="data tanaman.html">Tanaman</a></li>
+            </ul>
+          </li>
+          <li><a href="pagu.html">Pagu Baru</a></li>
+          <li><a class="drop" href="#" id="nick">
+          </a>
+            <ul>
+                <li><a href="../index.html" onclick="logout()">Keluar</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <!-- ################################################################################################ -->
+    </header>
+  </div>
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <!-- ################################################################################################ -->
+  <section id="breadcrumb" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Inventaris</a></li>
+    </ul>
+    <!-- ################################################################################################ -->
+    <h6 class="heading">Tampilan Data Inventaris</h6>
+    <!-- ################################################################################################ -->
+  </section>
+  <!-- ################################################################################################ -->
+</div>
+<!-- End Top Background Image Wrapper -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row3">
+  <main class="hoc container clear"> 
+    <!-- main body -->
+    <!-- ################################################################################################ -->
+    <div class="content"> 
+      <!-- ################################################################################################ -->
+      <div id="gallery">
+        <table style="width: auto; border: none; backface-visibility: hidden; padding: 0%;">
+          <tr>
+            <td>
+                <select id="jenis" onchange="setJenis()">
+                    <option value="" selected disabled hidden>Jenis</option>
+                </select>
+            </td>
+          </tr>
+        </table>
+        <table id="tblData"></table>
+
+        <!-- The Modal -->
+        <div id="myModal" class="modal">
+
+          <!-- Modal content -->
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="close" id="close">&times;</span>
+              <h2 align="center">Ubah Data</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+              <div align="center"><b>Nomor Polisi</b></div>
+              <input type="text" id="noPol">
+              <div align="center"><b>Merk</b></div>
+              <input type="text" id="merk">
+              <div align="center"><b>Pagu</b></div>
+              <input type="number" id="pagu">
+            </div>
+            <button type="button" class="btn" style="margin-top:1%; background: green; margin-left: 43%;
+             margin-bottom: 1%;" id="submitBtn">Submit</button>
+            <div class="modal-footer">
+              <h3 align="center">Mohon mengisi selengkap-lengkapnya</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The Deletation Modal -->
+      <div id="delModal" class="modal">
+          <!-- Modal content -->
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="close" id="closeDelModal">&times;</span>
+              <h2>Konfirmasi penghapusan:</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <input type="hidden" id="delPagu">
+                <input type="hidden" id="delTotal">
+                <button type="button" class="btn" style="margin-top:1%; background: red; 
+                margin-left: 43%; margin-bottom: 1%; width: 30%;" id="delConfirm">Lanjut</button>
+                <button type="button" class="btn" style="margin-top:1%; background: green;
+                 margin-left: 43%; margin-bottom: 1%; width: 30%;" id="delNope">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ################################################################################################ -->
+    <div class="clear"></div>
+  </main>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row4">
+  <footer id="footer" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <div class="one_quarter first">
+      <h6 class="heading">Kontak Kami</h6>
+      <p>Alamat : <br/>Jl. Raya Sempidi, Kecamatan Mengwi, Kabupaten Badung, Bali 80351</p>
+      <p>Telp : (0361) 9009239 , (0361) 9009242 </p>
+      <p>Email : bappedabadung@gmail.com </p>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">Temukan Kami Di</h6>
+      <ul class="faico clear">
+        <li><a class="faicon-facebook" href="https://www.facebook.com/Bappeda-Kabupaten-Badung-790957884347687/" target="_blank"> <i class="fa fa-facebook"></i></a></li>
+        <li><a class="faicon-twitter" href="https://twitter.com/bappedabadung" target="_blank"><i class="fa fa-twitter"></i></a></li>
+        <li><a class="faicon-instagram" href="https://www.instagram.com/bappeda.badung/" target="_blank"><i class="fa fa-instagram"></i></a></li>
+        <li><a class="faicon-youtube" href="https://www.youtube.com/channel/UCMaGnf90ow6HfClr9fIga_g" target="_blank"><i class="fa fa-youtube"></i></a></li>
+      </ul>
+    </div>
+    <div class="one_quarter">
+      <h6 class="heading">About Bappeda Badung</h6>
+      <ul class="nospace linklist">
+        <li><a href="http://bappeda.badungkab.go.id/home" target="_blank">Website Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/profil-bappeda-badung" target="_blank">Profil Bappeda Badung</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/visi-dan-misi" target="_blank">Visi dan Misi</a></li>
+        <li><a href="http://www.bappeda.badungkab.go.id/profil/struktur-organisasi" target="_blank">Struktur Organisasi</a></li>
+      </ul>
+    </div>
+    <!-- ################################################################################################ -->
+  </footer>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<div class="wrapper row5">
+  <div id="copyright" class="hoc clear"> 
+    <!-- ################################################################################################ -->
+    <p class="fl_left">Copyright &copy; 2018 - All Rights Reserved - <a href="#">Bappeda Kabupaten Badung</a></p>
+    <!-- ################################################################################################ -->
+  </div>
+</div>
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<!-- ################################################################################################ -->
+<a id="backtotop" href="#top"><i class="fa fa-chevron-up"></i></a>
+</body>
+</html>
